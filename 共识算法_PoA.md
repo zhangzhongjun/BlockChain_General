@@ -1,5 +1,8 @@
 # PoA共识算法
 
+## PoA的header的数据结构
+![PoA数据结构](imgs/PoA数据结构.jpg)
+
 ## 一些概念和定义
 * EPOCH_LENGTH: epoch长度是30000个block, 每次进入新的epoch,前面的投票都被清空,重新开始记录,这里的投票是指加入或移除signer
 * BLOCK_PERIOD: 出块时间, 默认是15s
