@@ -1,13 +1,39 @@
-UTXO(Unspent Transaction Output)包含两部分
+## PoA
+prove of authority
+
+### PoA的特点
+× PoA是依靠预设好的授权节点(signers)，负责产生block.
+× 可以由已授权的signer选举(投票超过50%)加入新的signer。
+× 即使存在恶意signer,他最多只能攻击连续块(数量是 (SIGNER_COUNT / 2) + 1) 中的1个,期间可以由其他signer投票踢出该恶意signer。
+× 可指定产生block的时间。
+
+### PoA的流程
+1. 在创世块中指定一组初始授权的signers, 所有地址 保存在创世块Extra字段中
+2. 启动挖矿后, 该组signers开始对生成的block进行签名并广播.
+3. 签名结果 保存在区块头的Extra字段中
+4. Extra中更新当前高度已授权的 所有signers的地址 ,因为有新加入或踢出的signer
+5. 每一高度都有一个signer处于IN-TURN状态, 其他signer处于OUT-OF-TURN状态, IN-TURN的signer签名的block会立即广播 , OUT-OF-TURN的signer签名的block会延时一段随机时间后再广播, 保证IN-TURN的签名block有更高的优先级上链
+6. 如果需要加入一个新的signer, signer通过API接口发起一个proposal, 该proposal通过复用区块头 Coinbase(新signer地址)和Nonce("0xffffffffffffffff") 字段广播给其他节点. 所有已授权的signers对该新的signer进行"加入"投票, 如果赞成票超过signers总数的50%, 表示同意加入
+7. 如果需要踢出一个旧的signer, 所有已授权的signers对该旧的signer进行"踢出"投票, 如果赞成票超过signers总数的50%, 表示同意踢出
+
+
+
+## 测试网络
+morden
+ropsten
+kovan
+
+
+## UTXO(Unspent Transaction Output)包含两部分
 1. 所有者
 2. 余额
 
-APPLY(S,TX) -> S`
+## APPLY(S,TX) -> S`
 1. TX中的每个输入，如果被引用的UTXO不在S中，返回一个错误
 2. TX中的每个输入，如果提供的签名和UTXO中的所有者不匹配，则返回一个错误
 3. 如果所有的输入UTXO的总和 小于 所有的输出UTXO的总和，则返回一个错误
 
-验证一个区块的过程
+## 验证一个区块的过程
 1. 检查该区块引用的上一个区块是否存在并且有效
 2. 检查该区块的时间戳是否大于上一个区块的时间戳并且小于2小时
 3. 检查该区块上的POW是否有效
@@ -15,15 +41,16 @@ APPLY(S,TX) -> S`
 5. 对于每个交易TX，S[i+1] = APPLY(S[i],TX),如果任意一个APPLY出错，则返回false
 6. 返回true，将S[n]放在该区块的最末端的状态
 
-简化支付验证 SPV
+## 简化支付验证 SPV
 1. 只下载和保存区块的头信息
 2. 在区块头中验证POW
 3. 只下载merkle 树中与该交易相关的分支
 
-账户包括外部账户和合约账户
+## 账户包括外部账户和合约账户
 × 外部账号：EOA账户，有用户控制
 × 合约账号：由合约代码控制，只能由一个EOA账号来操作
 
+## 链的种类
 公有链：世界上任何一个人都可以参与区块链，用户可以查看，可以发送交易，也可以参与保持数据一致性的运算等
 私有链：完全的私有链是指写数据是由一个人或一个单一的组织控制的链。私有链的读权限可以公开或者在一定范围内公开
 联盟链：数据一致性的运算是预定义的几个节点共同控制的链，在这个链中，每一个节点的每一次操作都需要若干节点的共同签名才能验证，这种链上的读权限可能是公开的，也有可能是部分公开的。
