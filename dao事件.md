@@ -71,7 +71,9 @@ DAO的成员投票权重由他们掌握的代币数量来决定。代币是可�
 
 ## 项目代码分析
 
-TokenCreation.sol 公募时候使用的
+TokenCreation.sol 公募时候使用的智能合约，函数如下：
+
+* createTokenProxy  
 Token.sol 定义了检查token余额、发送token、代表第三方发送token以及相应的审批流程等
 
 
