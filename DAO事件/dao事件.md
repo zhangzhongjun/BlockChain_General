@@ -1,81 +1,7 @@
 # the DAO攻击事件
 
-> 2016年6月18日，以太坊网络上爆发了the DAO攻击事件，该事件直接导致了以太坊的硬分叉，同时让以太坊社区分裂为ETH和ETC两个社区。
+> 2016年6月18日，以太坊上爆发了the DAO攻击事件，该事件直接导致了以太坊的硬分叉，同时让以太坊社区分裂为ETH和ETC两个社区。
 > 在the DAO攻击发生两周年之际，我们回过头来细细回顾这起事件。搞起其中的原理，帮助我们编写出更好、更健壮的dapp。
-
-
-## DAO的概念 
-
-DAO是Decentralized Autonomous Organization的缩写，“去中心化”是指希望组织内部的成员都有高度的参与性，组织成员地位平等，共同决定组织的发展方向；“自治”是指希望尽可能地减少外界对该组织的干预，让组织内部人员决定组织的发展方向。
-
-
-## The DAO 白皮书解读
-
-The DAO是一个去中心化的风险投资基金，以智能合约的形式运行在以太坊区块链上。它也是一个盈利性的DAO（去中心化自治组织），它将利用自己掌控的以太币资金通过投资以太坊上的应用为其成员创造价值。
-
-### 众筹
-
-在The DAO创建期，任何人都可以向它的众筹合约（0xBB9bc244D798123fDe783fCc1C72d3Bb8C189413）发送以太币，获得DAO代币，这就是The DAO的众筹，为期28天（2016年4月30日到2016年5月28日）。前14天1个以太币可以兑换100个DAO代币；中间10天，每个以太币可以换的DAO数量线性减少，最后四天1.5个以太币换100个DAO代币。
-
-上面关于代币数量的计算是参考白皮书中第5章——代币价格 推导出来的。
-
-在众筹结束后，这些代币的所有权可以通过以太坊区块链的交易转移给其他用户。
-
-### 提议
-
-提议在the DAO的白皮书中以proposal 或者 offer 表示。
-
-DAO的每一个成员都可以花费一部分众筹来的以太币来提交提议。如果建议被批准，以太币会发送到另外一个表示提议项目的合约中。这样，智能合约可以参数化，使DAO能与资助的项目相互作用并影响它。
-
-每一个提议的表示形式都是一个智能合约，the DAO项目中有一个示例提议 https://github.com/TheDAO/DAO-1.0/blob/master/SampleOffer.sol
-
-### 投票
-
-DAO的成员投票权重由他们掌握的代币数量来决定。代币是可分割，无差别的，可以方便的在用户之间进行转移。在合约中，成员的个人行为不能被直接确定。任何提议都需要一个时间范围去讨论和投票。
-
-在超过该时间范围之后，代币的持有者可以调用一个DAO合约中的函数来验证大多数的投票是支持提议的并达到了法定人数。如果是这种情况，提议将会执行；如果不是这种情况，提议将会关闭。
-
-### 分割DAO
-
-如果在DAO组织中，个人或者一群代币的所有者（下文中称为“少数人”），非常反对某项提议，在某项提议执行前想要取回他们的资金，他们可以提交一个特殊的提议来形成一个新的DAO。“少数人”可以投票将他们的资金转移到这个新的DAO中，使得剩下的“多数人”只能花费他们自己的钱。
-
-![1](imgs-dao/1.png)
-
-在the DAO的智能合约中，使用splitDAO函数来完成DAO组织的分割的。该函数是黑客入侵的入口函数，在下面我会详细解释。
-
-### 服务提供商
-
-服务提供商在白皮书中使用curator表示。
-
-每一个单独的DAO都对应着一个单独的服务提供商，这个服务提供方控制着一个唯一的账号，通过提议可以从DAO中接受。另外，服务器提供商可以创建DAO可以发送金额的白名单地址。这给了服务提供方非常大的权力。 为了防止滥用这种权力，DAO可以投票选择新的服务提供方。
-
-## 如何分割DAO
-
-> 在上面已经提到过DAO的分割，但是DAO的分割太重要了，黑客就是利用DAO分割中一个错误完成的攻击。所以我们再次细细研究以下DAO的分割
-
-分割DAO 是指token 的所有者调用splitDAO函数，将自己持有的eth和token从原有的DAO中取出，并转到一个新的dao的过程。
-
-分割DAO的流程如下：
-1. 新建一个提议用来分割DAO。
-2. 找到提议的ID（第3步投票、和第5步分隔DAO的时候需要用到提议的ID）。
-3. 对你的提议投“YES”。
-4. 等待若干天的辩论期。该天数取决于你在新建提议时，在“Debating Period”里指定的时间。最短是7天。
-5. 调用Split DAO函数 - 现在你将正式的分割你的以太币和奖励代币，你不在是原DAO的一份子了。
-6. 找到你的新的DAO地址，增加新的Watch Contract & Watch Token。
-7. 等待27天的新的分割DAO的众筹期。
-8. 等待27天的新的分割DAO的众筹期，将你的地址增加到白名单。
-9. 新建提议发送所有的以太到这个地址。
-10. 对这个提议投Yes。
-11. 等待14天的投票期。
-12. 执行提议。“现在你的以太币已经被发送到这个指定的地址了”。
-
-## 项目代码分析
-
-TokenCreation.sol 公募时候使用的智能合约，函数如下：
-
-* createTokenProxy  
-Token.sol 定义了检查token余额、发送token、代表第三方发送token以及相应的审批流程等
-
 
 
 ## 一些重要的合约地址：
@@ -106,7 +32,7 @@ https://github.com/TheDAO/DAO-1.0
 
 DAO合约中的
 DAO.sol：DAO的标准智能合约，用于管理自治组织并进行决策
-DAOTokenCreationProxyTransferer.sol：
+DAOTokenCreationProxyTransferer.sol：用于创建一种新的代币体系，因为新DAO需要有自己的token体系。
 ManagedAccount.sol：基本的账户，用来管理reward账号和extraBalance账户。
 SampleOffer.sol：开发小组给出一个示例offer，演示了从合同商到DAO组织的offer应该怎么写
 Token.sol：检查token的余额，发送token，代表第三方发送相应的代币
@@ -174,12 +100,12 @@ rewardToken[address(this)];
 
 rewardToken[address(p.splitData[0].newDAO)] += rewardTokenToBeMoved;
 if (rewardToken[address(this)] < rewardTokenToBeMoved)
-throw;
+	throw;
 rewardToken[address(this)] -= rewardTokenToBeMoved;
 
 DAOpaidOut[address(p.splitData[0].newDAO)] += paidOutToBeMoved;
 if (DAOpaidOut[address(this)] < paidOutToBeMoved)
-throw;
+	throw;
 DAOpaidOut[address(this)] -= paidOutToBeMoved;
 
 // 注意这里，为msg.sender记录的dao币余额归零、扣减dao币总量totalSupply等等都发生在将发回msg.sender之后，这是一个典型“反模式”。
@@ -194,34 +120,39 @@ return true;
 
 ### withdrawRewardFor函数（DAO.sol 716行）
 ```solidity
-    function withdrawRewardFor(address _account) noEther internal returns (bool _success) {
-        if ((balanceOf(_account) * rewardAccount.accumulatedInput()) / totalSupply < paidOut[_account])
-            throw;
+function withdrawRewardFor(address _account) noEther internal returns (bool _success) {
+	if ((balanceOf(_account) * rewardAccount.accumulatedInput()) / totalSupply < paidOut[_account])
+		throw;
 
-        uint reward =
-            (balanceOf(_account) * rewardAccount.accumulatedInput()) / totalSupply - paidOut[_account];
-        // 调用paidOut函数
-        if (!rewardAccount.payOut(_account, reward))
-            throw;
-        
-        paidOut[_account] += reward;
-        return true;
-    }
+	uint reward =
+(balanceOf(_account) * rewardAccount.accumulatedInput()) / totalSupply - paidOut[_account];
+	// 调用paidOut函数
+    if (!rewardAccount.payOut(_account, reward))
+		throw;
+
+	paidOut[_account] += reward;
+	return true;
+}
 ```
 
 ### payOut函数（ManagedAccount.sol 57行）
 ```solidity
-   function payOut(address _recipient, uint _amount) returns (bool) {
-        if (msg.sender != owner || msg.value > 0 || (payOwnerOnly && _recipient != owner))
-            throw;
-        // 注意这里 _recipient.call.value(_amount)()是不需要消耗gas的
-        if (_recipient.call.value(_amount)()) {
-            PayOut(_recipient, _amount);
-            return true;
-        } else {
-            return false;
-        }
-    }
+function payOut(address _recipient, uint _amount) returns (bool) {
+	// 正确性检查
+	// 1. 只有该账户的拥有者才能调用该函数
+	// 2. 只能转移大于零的数额
+	// 3. 如果设置了只能给自己转账，则不能将以太币转移给其他人
+	if (msg.sender != owner || msg.value > 0 || (payOwnerOnly && _recipient != owner))
+		throw;
+	// 调用call来完成转账
+	// 注意这里 _recipient.call.value(_amount)()是不需要消耗gas的
+	if (_recipient.call.value(_amount)()) {
+		PayOut(_recipient, _amount);
+		return true;
+	} else {
+		return false;
+	}
+}
 ```
 
 ## 攻击
@@ -233,14 +164,16 @@ return true;
 
 调用栈如下
 ```
-splitDao
-  withdrawRewardFor
-	 payOut
-		recipient.call.value()()
-		   splitDao
-			 withdrawRewardFor
-				payOut
-				   recipient.call.value()()
+提交split proposal
+	调用splitDao函数（手动调用）
+		调用createNewDAO函数（如果不是第一次调用，则不会调用该函数）
+		调用withdrawRewardFor函数，用于归还奖励token
+		调用payOut函数
+			调用recipient.call.value()函数
+				再次调用splitDao函数（手动调用）
+					调用withdrawRewardFor
+					调用payOut函数
+					调用recipient.call.value()函数
 ```
 
 1. 提出一个split然后等待直达表决期限到期。（DAO.sol, createProposal）
@@ -256,6 +189,16 @@ splitDao
 1. 能够持续运行这个合约。即迭代运行。 
 2. 能够利用漏洞，转钱到自己的账户，且不会因为交易费机制而终止交易。即交易成本要低于转账总额。
 
+## 攻击分析
+
+### 应用代码顺序方面
+
+应先扣减dao的余额再转账Ether，因为dao的余额检查作为转账Ether的先决条件，要求dao的余额状况必须能够及时反映最新状况。在问题代码实现中，尽管最深的递归返回并成功扣减黑客的dao余额，但此时对黑客dao余额的扣减已经无济于事，因为其上各层递归调用中余额检查都已成功告终，已经不会再有机会判断最新余额了。
+
+### 不受限制地执行未知代码方面
+
+虽然黑客当前是利用了solidity提供的匿名fallback函数，但这种对未知代码的执行原则上可以发生在更多场景下，因为合约之间的消息传递完全类似于面向对象程序开发中的方法调用，而提供接口等待回调是设计模式中常见的手法，所以完全有可能执行一个未知的普通函数。
+
 ## 软分叉
 
 为了解决TheDAO大量资金被盗的问题，尽管争议颇多，以太坊官方还是推出了针对TheDAO的软分叉版本Gethv1.4.8，该版本增加了一些规则以锁定黑客控制的以太币，以便有更多时间留给社区去解决TheDAO的问题。在六月底的数据显示，绝大多数矿工都升级了这个版本的软件，眼看着软分叉就要大功告成了。
@@ -265,9 +208,9 @@ splitDao
 ## 参考文献
 
 https://ethfans.org/topics/242 参与众筹的详细步骤
-https://ethfans.org/posts/114
+https://ethfans.org/posts/114 中文的对攻击的分析
 https://ethfans.org/topics/351  The DAO 合约攻击信息汇总
-https://ethfans.org/posts/split-the-dao-get-back-ether 分隔dao的教程
+https://ethfans.org/posts/split-the-dao-get-back-ether 分割dao的教程
 https://vessenes.com/deconstructing-thedao-attack-a-brief-code-tour/
 https://vessenes.com/more-ethereum-attacks-race-to-empty-is-the-real-deal/
 https://www.jubi.com/shanzhaibi/1748.html
