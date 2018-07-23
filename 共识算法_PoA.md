@@ -1,5 +1,7 @@
 # PoA共识算法
 
+> 由Parity Technologies首创的权威证明（POA，Proof of Authority）
+
 ## PoA的header的数据结构
 ![PoA数据结构](imgs/PoA数据结构.jpg)
 
